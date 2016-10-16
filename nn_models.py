@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.cross_validation import train_test_split
+from numpy.random import choice
 
 class data_container():
     def __init__(self, X, y):
@@ -12,11 +13,11 @@ class data_container():
         # Method for created random training, testing data
         if seed:
             X_train, X_test, y_train, y_test = \
-                    train_test_split(self.X, self.y,
+                    train_test_split(self.X, self.y,\
                             test_size=test_size, random_state=seed)
         else:
             X_train, X_test, y_train, y_test = \
-                    train_test_split(self.X, self.y,
+                    train_test_split(self.X, self.y,\
                             test_size=test_size)
 
         self.X_train = X_train
@@ -43,6 +44,13 @@ class data_container():
         enc.fit(y_train_sign)
         self.y_train_class = enc.transform(y_train_sign)
         self.y_test_class = enc.transform(y_test_sign)
+
+    def make_numpy_arrays(self):
+        self.X_train = self.X_train.values
+        self.X_test = self.X_test.values
+        self.y_train = self.y_train.values
+        self.y_test = self.y_test.values
+
 
 def tf_classifier(data, hidden_layer_size):
     pass
@@ -102,3 +110,23 @@ def tf_regressor(data, hidden_layer_size, hidden_drop_keep_probs, learning_rate=
     loss = tf.reduce_mean(tf.square(y - y_model) * 1e4)
     optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
     init = tf.initialize_all_variables()
+
+    # now run the model
+
+    with tf.Session as sess:
+        sess.run(init)
+
+        disp_step=250
+
+        vec_size = data.y_train.shape[0]
+        minibatch_per_epoch=20 # addd to def args
+
+        for i in range(9999999):
+            for _ in range(minibatch_per_epoch):
+                vec = choice([True, False], vec_size, p=[1./minibatch_per_epoch, 1-(1./minibatch_per_epoch)])
+                sess.run(optimizer, feed_dict={X : data.X_train.values[vec, :], y : data.y_train.values[vec, :]})
+
+        if i % disp_step == 0:
+            this_test_loss = sess.run(loss, feed_dict={X : data.X_test.values, y : data.y_train.values})
+
+
