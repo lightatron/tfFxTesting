@@ -47,7 +47,7 @@ class data_container():
 def tf_classifier(data, hidden_layer_size):
     pass
 
-def tf_regressor(data, hidden_layer_size):
+def tf_regressor(data, hidden_layer_size, hidden_drop_keep_probs, learning_rate=0.01):
     num_outs = data.y.shape[1]
     num_ins = data.x.shape[1]
 
@@ -84,6 +84,21 @@ def tf_regressor(data, hidden_layer_size):
     bias_list.append(b_final)
 
     # now perform operations
+    assert len(hidden_layer_size) == len(hidden_drop_keep_probs)
 
+    X = tf.placeholder("float")
+    y = tf.placeholder("float")
 
+    hidden = tf.nn.relu(tf.add(tf.matmul(X, weights_list[0]), bias_list[0]))
+    hidden = tf.nn.dropout(hidden, keep_prob=hidden_drop_keep_probs[0])
 
+    for w in range(1, len(hidden_layer_size)):
+        hidden = tf.nn.relu(tf.add(tf.matmul(hidden, weights_list[w]), bias_list[w]))
+        hidden = tf.nn.dropout(hidden, keep_prob=hidden_drop_keep_probs[w])
+
+    # now output
+    y_model = tf.nn.relu(tf.add(tf.matmul(hidden, weights_list[-1]), bias_list[-1]))
+
+    loss = tf.reduce_mean(tf.square(y - y_model) * 1e4)
+    optimizer = tf.train.AdamOptimizer(learning_rate).minimize(loss)
+    init = tf.initialize_all_variables()
